@@ -140,6 +140,14 @@ Thank you for visiting this repository.
 
 For issues, suggestions, or contributions, please open an issue or submit a pull request.
 
+
+| Metric | Value |
+|--------|-------|
+| 📅 Last Update | 2026-05-26 |
+| 📊 Total Commits | 1 |
+| ✅ Project.toml | true |
+| 🔄 CI Status | [![CI](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/ci.yml/badge.svg)](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/ci.yml) |
+
 ## 📊 Project Status
 
 ### 📈 Live Metrics
