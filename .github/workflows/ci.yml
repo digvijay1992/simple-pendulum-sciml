@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.julia/artifacts
-          key: ${{ runner.os }}-julia-${{ matrix.version }}-${{ hashFiles('simple-pendulum-sciml/Project.toml') }}
+          key: ${{ runner.os }}-julia-${{ matrix.version }}-${{ hashFiles('Project.toml') }}
           restore-keys: |
             ${{ runner.os }}-julia-${{ matrix.version }}-
       
@@ -46,28 +46,27 @@ jobs:
       - name: Run simulation
         id: run_sim
         run: |
-          cd simple-pendulum-sciml
           julia A2P1.jl 2>&1 | tee output.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
       
       - name: Verify output files
         run: |
-          if [ -f "simple-pendulum-sciml/pendulum.png" ]; then
+          if [ -f "pendulum.png" ]; then
             echo "✅ pendulum.png generated successfully"
-            file simple-pendulum-sciml/pendulum.png
+            file pendulum.png
           else
             echo "❌ pendulum.png not found!"
-            ls -la simple-pendulum-sciml/
+            ls -la 
             exit 1
           fi
       
       - name: Check simulation output
         run: |
-          if grep -q "Simulation complete" simple-pendulum-sciml/output.log; then
+          if grep -q "Simulation complete" output.log; then
             echo "✅ Simulation completed successfully"
           else
             echo "❌ Simulation may have failed"
-            cat simple-pendulum-sciml/output.log
+            cat output.log
             exit 1
           fi
       
@@ -76,17 +75,17 @@ jobs:
         with:
           name: results-julia-${{ matrix.version }}
           path: |
-            simple-pendulum-sciml/pendulum.png
-            simple-pendulum-sciml/output.log
+            pendulum.png
+            output.log
           retention-days: 30
       
       - name: Run performance benchmark
         run: |
-          echo "## Performance Metrics" > simple-pendulum-sciml/benchmark.md
-          echo "- Julia Version: ${{ matrix.version }}" >> simple-pendulum-sciml/benchmark.md
-          echo "- Run Date: $(date)" >> simple-pendulum-sciml/benchmark.md
-          echo "- Exit Code: ${{ steps.run_sim.outputs.exit_code }}" >> simple-pendulum-sciml/benchmark.md
-          cat simple-pendulum-sciml/benchmark.md
+          echo "## Performance Metrics" > benchmark.md
+          echo "- Julia Version: ${{ matrix.version }}" >> benchmark.md
+          echo "- Run Date: $(date)" >> benchmark.md
+          echo "- Exit Code: ${{ steps.run_sim.outputs.exit_code }}" >> benchmark.md
+          cat benchmark.md
 
   notify:
     name: Send Notification
