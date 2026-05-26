@@ -1,20 +1,14 @@
-name: Advanced CI Pipeline
+name: CI Pipeline
 
 on:
   push:
     branches: [ main, master ]
-    paths-ignore:
-      - 'README.md'
-      - '**.md'
   pull_request:
     branches: [ main, master ]
-  schedule:
-    - cron: '0 12 * * 1'
   workflow_dispatch:
 
 jobs:
   test:
-    name: Run Simulation on Julia ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -22,11 +16,9 @@ jobs:
         version: ['1.10', '1.11', '1.12']
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Setup Julia
-        uses: julia-actions/setup-julia@v2  # ✅ Fixed: Use v2 tag
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
       
@@ -41,77 +33,35 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f "Project.toml" ]; then
-            echo "📦 Project.toml found - running Pkg.instantiate()"
             julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
           else
-            echo "📦 No Project.toml - installing packages directly"
             julia -e 'using Pkg; Pkg.add(["DifferentialEquations", "ModelingToolkit", "Plots"]); Pkg.precompile()'
           fi
       
-      - name: Verify packages are installed
+      - name: Verify packages
         run: |
           julia -e 'using DifferentialEquations, ModelingToolkit, Plots; println("✅ All packages loaded successfully!")'
       
-      - name: Run simulation
-        id: run_sim
-        run: |
-          julia A2P1.jl 2>&1 | tee output.log
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+      - name: Run pendulum simulation
+        run: julia A2P1.jl
       
-      - name: Verify output files
+      - name: Verify output
         run: |
           if [ -f "pendulum.png" ]; then
-            echo "✅ pendulum.png generated successfully"
+            echo "✅ Pendulum simulation successful!"
             file pendulum.png
           else
-            echo "❌ pendulum.png not found!"
-            echo "Contents of directory:"
+            echo "❌ Failed to generate pendulum.png"
             ls -la
             exit 1
           fi
       
-      - name: Check simulation output
-        run: |
-          if [ -f "output.log" ] && grep -q "Simulation complete" output.log; then
-            echo "✅ Simulation completed successfully"
-          else
-            echo "⚠️ Simulation may have failed or log missing"
-            if [ -f "output.log" ]; then
-              cat output.log
-            fi
-          fi
-      
-      - name: Upload results as artifact
+      - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: results-julia-${{ matrix.version }}
+          name: pendulum-results-julia-${{ matrix.version }}
           path: |
             pendulum.png
-            output.log
-            *.png
             *.log
           retention-days: 30
           if-no-files-found: warn
-      
-      - name: Run performance benchmark
-        run: |
-          echo "## Performance Metrics" > benchmark.md
-          echo "- Julia Version: ${{ matrix.version }}" >> benchmark.md
-          echo "- Run Date: $(date)" >> benchmark.md
-          echo "- Exit Code: ${{ steps.run_sim.outputs.exit_code }}" >> benchmark.md
-          cat benchmark.md
-
-  notify:
-    name: Send Notification
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check status
-        run: |
-          if [ "${{ needs.test.result }}" == "success" ]; then
-            echo "🎉 All tests passed!"
-          else
-            echo "⚠️ Some tests failed. Check the logs:"
-            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          fi
