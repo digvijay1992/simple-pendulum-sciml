@@ -1,0 +1,103 @@
+name: Advanced CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - 'README.md'
+      - '**.md'
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 12 * * 1'  # Run every Monday at 12:00 UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  test:
+    name: Run Simulation on Julia ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['1.10.10', '1.11', '1.12']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-julia-${{ matrix.version }}-${{ hashFiles('simple-pendulum-sciml/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-${{ matrix.version }}-
+      
+      - name: Install dependencies
+        run: |
+          cd simple-pendulum-sciml
+          julia -e 'using Pkg; Pkg.instantiate()'
+      
+      - name: Run simulation
+        id: run_sim
+        run: |
+          cd simple-pendulum-sciml
+          julia A2P1.jl 2>&1 | tee output.log
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+      
+      - name: Verify output files
+        run: |
+          if [ -f "simple-pendulum-sciml/pendulum.png" ]; then
+            echo "✅ pendulum.png generated successfully"
+            file simple-pendulum-sciml/pendulum.png
+          else
+            echo "❌ pendulum.png not found!"
+            ls -la simple-pendulum-sciml/
+            exit 1
+          fi
+      
+      - name: Check simulation output
+        run: |
+          if grep -q "Simulation complete" simple-pendulum-sciml/output.log; then
+            echo "✅ Simulation completed successfully"
+          else
+            echo "❌ Simulation may have failed"
+            cat simple-pendulum-sciml/output.log
+            exit 1
+          fi
+      
+      - name: Upload results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-julia-${{ matrix.version }}
+          path: |
+            simple-pendulum-sciml/pendulum.png
+            simple-pendulum-sciml/output.log
+          retention-days: 30
+      
+      - name: Run performance benchmark
+        run: |
+          echo "## Performance Metrics" > simple-pendulum-sciml/benchmark.md
+          echo "- Julia Version: ${{ matrix.version }}" >> simple-pendulum-sciml/benchmark.md
+          echo "- Run Date: $(date)" >> simple-pendulum-sciml/benchmark.md
+          echo "- Exit Code: ${{ steps.run_sim.outputs.exit_code }}" >> simple-pendulum-sciml/benchmark.md
+          cat simple-pendulum-sciml/benchmark.md
+
+  notify:
+    name: Send Notification
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check status
+        run: |
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "🎉 All tests passed!"
+          else
+            echo "⚠️ Some tests failed. Check the logs."
+          fi
