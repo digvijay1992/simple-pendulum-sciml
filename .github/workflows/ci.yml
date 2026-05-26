@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v2  # ✅ Changed: Use @v2, NOT a SHA
         with:
           version: ${{ matrix.version }}
       
