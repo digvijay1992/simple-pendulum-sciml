@@ -40,7 +40,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          julia -e 'using Pkg; Pkg.instantiate()'
+          julia -e 'using Pkg; Pkg.add(["DifferentialEquations", "ModelingToolkit", "Plots"])'
       
       - name: Run simulation
         id: run_sim
