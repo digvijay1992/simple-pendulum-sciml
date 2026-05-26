@@ -4,12 +4,12 @@
 
 | Badge | Status |
 |-------|--------|
-| **CI Pipeline** | [![Advanced CI Pipeline](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/ci.yml/badge.svg)](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/ci.yml) |
-| **Performance** | [![Performance Benchmark](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/performance.yml/badge.svg)](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/performance.yml) |
+| **CI Pipeline** | [![CI Pipeline](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/ci.yml/badge.svg)](https://github.com/digvijay1992/simple-pendulum-sciml/actions/workflows/ci.yml) |
 | **Julia Version** | [![Julia](https://img.shields.io/badge/Julia-1.10.10-purple.svg)](https://julialang.org/) |
 | **License** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
 | **Last Commit** | ![Last Commit](https://img.shields.io/github/last-commit/digvijay1992/simple-pendulum-sciml) |
 | **Code Size** | ![Code Size](https://img.shields.io/github/languages/code-size/digvijay1992/simple-pendulum-sciml) |
+| **Open Issues** | ![Issues](https://img.shields.io/github/issues/digvijay1992/simple-pendulum-sciml) |
 
 
 [![GitHub stars](https://img.shields.io/github/stars/digvijay1992/simple-pendulum-sciml?style=social)](https://github.com/digvijay1992/simple-pendulum-sciml/stargazers)

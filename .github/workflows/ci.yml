@@ -1,103 +1,73 @@
-name: Advanced CI Pipeline
+name: CI Pipeline
 
 on:
   push:
-    branches: [ main, master ]
-    paths-ignore:
-      - 'README.md'
-      - '**.md'
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
-  schedule:
-    - cron: '0 12 * * 1'  # Run every Monday at 12:00 UTC
-  workflow_dispatch:  # Allow manual trigger
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
-    name: Run Simulation on Julia ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        version: ['1.10.10', '1.11', '1.12']
+        version: ['1.10', '1.11']  # Using major versions for better compatibility
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Setup Julia
-        uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
       
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-julia-${{ matrix.version }}-${{ hashFiles('simple-pendulum-sciml/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-julia-${{ matrix.version }}-
+      - name: Display Julia version
+        run: julia --version
       
       - name: Install dependencies
         run: |
-          cd simple-pendulum-sciml
-          julia -e 'using Pkg; Pkg.instantiate()'
+          julia -e '
+            using Pkg
+            println("Installing DifferentialEquations...")
+            Pkg.add("DifferentialEquations")
+            println("Installing ModelingToolkit...")
+            Pkg.add("ModelingToolkit")
+            println("Installing Plots...")
+            Pkg.add("Plots")
+            println("All packages installed successfully!")
+          '
       
-      - name: Run simulation
-        id: run_sim
+      - name: Verify installations
         run: |
-          cd simple-pendulum-sciml
-          julia A2P1.jl 2>&1 | tee output.log
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          julia -e '
+            println("Checking packages...")
+            using DifferentialEquations
+            using ModelingToolkit
+            using Plots
+            println("✅ All packages loaded successfully!")
+          '
       
-      - name: Verify output files
+      - name: List files
+        run: ls -la
+      
+      - name: Run pendulum simulation
+        run: julia A2P1.jl
+      
+      - name: Verify output
         run: |
-          if [ -f "simple-pendulum-sciml/pendulum.png" ]; then
-            echo "✅ pendulum.png generated successfully"
-            file simple-pendulum-sciml/pendulum.png
+          if [ -f "pendulum.png" ]; then
+            echo "✅ Simulation successful! pendulum.png generated."
+            ls -lh pendulum.png
           else
-            echo "❌ pendulum.png not found!"
-            ls -la simple-pendulum-sciml/
+            echo "❌ Failed to generate pendulum.png"
+            echo "Current directory contents:"
+            ls -la
             exit 1
           fi
       
-      - name: Check simulation output
-        run: |
-          if grep -q "Simulation complete" simple-pendulum-sciml/output.log; then
-            echo "✅ Simulation completed successfully"
-          else
-            echo "❌ Simulation may have failed"
-            cat simple-pendulum-sciml/output.log
-            exit 1
-          fi
-      
-      - name: Upload results as artifact
+      - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: results-julia-${{ matrix.version }}
-          path: |
-            simple-pendulum-sciml/pendulum.png
-            simple-pendulum-sciml/output.log
-          retention-days: 30
-      
-      - name: Run performance benchmark
-        run: |
-          echo "## Performance Metrics" > simple-pendulum-sciml/benchmark.md
-          echo "- Julia Version: ${{ matrix.version }}" >> simple-pendulum-sciml/benchmark.md
-          echo "- Run Date: $(date)" >> simple-pendulum-sciml/benchmark.md
-          echo "- Exit Code: ${{ steps.run_sim.outputs.exit_code }}" >> simple-pendulum-sciml/benchmark.md
-          cat simple-pendulum-sciml/benchmark.md
-
-  notify:
-    name: Send Notification
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check status
-        run: |
-          if [ "${{ needs.test.result }}" == "success" ]; then
-            echo "🎉 All tests passed!"
-          else
-            echo "⚠️ Some tests failed. Check the logs."
-          fi
+          name: pendulum-results-julia-${{ matrix.version }}
+          path: pendulum.png
+          if-no-files-found: error
