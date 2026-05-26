@@ -40,7 +40,6 @@ jobs:
       
       - name: Install dependencies
         run: |
-          cd simple-pendulum-sciml
           julia -e 'using Pkg; Pkg.instantiate()'
       
       - name: Run simulation
