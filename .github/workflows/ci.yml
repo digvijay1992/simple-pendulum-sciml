@@ -23,7 +23,17 @@ jobs:
       
       - name: Install dependencies
         run: |
-          julia -e 'using Pkg; Pkg.add(["DifferentialEquations", "ModelingToolkit", "Plots"])'
+          if [ -f "Project.toml" ]; then
+            echo "📦 Project.toml found - running Pkg.instantiate()"
+            julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+          else
+            echo "📦 No Project.toml - installing packages directly"
+            julia -e 'using Pkg; Pkg.add(["DifferentialEquations", "ModelingToolkit", "Plots"]); Pkg.precompile()'
+          fi
+      
+      - name: Verify packages
+        run: |
+          julia -e 'using DifferentialEquations, ModelingToolkit, Plots; println("✅ All packages loaded successfully!")'
       
       - name: Run pendulum simulation
         run: julia A2P1.jl
